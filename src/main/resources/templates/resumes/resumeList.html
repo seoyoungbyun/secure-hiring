@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>이력서 검증</title>
+</head>
+<body>
+<h2>받은 이력서 목록</h2>
+
+<div th:each="envelope : ${envelopes}" class="resume-card">
+  <p th:text="${envelope.sender.name + '님의 이력서입니다.'}"></p>
+
+  <form th:action="@{/hr/resumes/verify}" method="post">
+    <input type="hidden" name="envelopeId" th:value="${envelope.id}" />
+    <input type="hidden" name="hrName" th:value="${hrName}" />
+    <button type="submit">검증하기</button>
+  </form>
+</div>
+</body>
+</html>

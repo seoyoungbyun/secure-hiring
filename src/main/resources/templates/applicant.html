@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>지원자</title>
+</head>
+<body>
+
+<!-- 이력서 지원하기 -->
+<form th:action="@{/applicant/resumes/upload}" method="get">
+    <button type="submit">📤 이력서 지원하기</button>
+</form>
+
+<br><br>
+
+<!-- 합격발표 확인하기 -->
+<form th:action="@{/}" method="get"> <!--요청 url 수정-->
+    <button type="submit">🎉 합격발표</button>
+</form>
+</body>
+</html>

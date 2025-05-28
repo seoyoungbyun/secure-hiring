@@ -22,5 +22,5 @@ public class Company {
     private String privateKey;
 
     @OneToMany(mappedBy = "targetCompany", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Resume> resumes;
+    private List<Envelope> resumes;
 }

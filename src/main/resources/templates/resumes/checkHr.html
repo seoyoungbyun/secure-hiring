@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>이력서 검증</title>
+</head>
+<body>
+<h2>채용 담당자 확인</h2>
+<form th:action="@{/hr/resumes/view}" method="get">
+    <label for="hrName">채용 담당자 이름:</label>
+    <input type="text" id="hrName" name="hrName" required>
+    <button type="submit">이력서 목록 조회</button>
+</form>
+</body>
+</html>
