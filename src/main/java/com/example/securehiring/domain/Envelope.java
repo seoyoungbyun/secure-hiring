@@ -1,6 +1,7 @@
 package com.example.securehiring.domain;
 
 import com.example.securehiring.domain.enums.EnvelopeType;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,6 +9,7 @@ import lombok.*;
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @AllArgsConstructor
 public class Envelope {
     @Id
@@ -28,5 +30,5 @@ public class Envelope {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_company_id", nullable = false)
-    private Company receiverCompany;
+    private Company targetCompany;
 }
