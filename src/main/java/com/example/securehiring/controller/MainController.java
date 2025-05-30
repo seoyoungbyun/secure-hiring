@@ -10,5 +10,14 @@ public class MainController {
     public String showMainPage() {
         return "main";
     }
-}
 
+    @GetMapping("/result")
+    public String result() {
+        return "result";
+    }
+
+    @GetMapping("/search")
+    public String search() {
+        return "search";
+    }
+}
