@@ -21,7 +21,7 @@ public class EncryptedEnvelope implements Serializable {
     }
 
     // 객체 직렬화: EncryptedEnvelope -> byte[]
-    static byte[] serializeToBytes(EncryptedEnvelope envelope) {
+    public static byte[] serializeToBytes(EncryptedEnvelope envelope) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
 
@@ -34,7 +34,7 @@ public class EncryptedEnvelope implements Serializable {
     }
 
     // 역직렬화: byte[] -> EncryptedEnvelope
-    static EncryptedEnvelope deserializeFromBytes(byte[] dataBytes) {
+    public static EncryptedEnvelope deserializeFromBytes(byte[] dataBytes) {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(dataBytes);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
 

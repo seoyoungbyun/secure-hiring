@@ -24,7 +24,7 @@ public class SignedPayload implements Serializable {
     }
 
     // 객체 직렬화: SignedPayload -> byte[]
-    static byte[] serializeToBytes(SignedPayload payload){
+    public static byte[] serializeToBytes(SignedPayload payload){
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
 
@@ -37,7 +37,7 @@ public class SignedPayload implements Serializable {
     }
 
     // 역직렬화: byte[] -> SignedPayload
-    static SignedPayload deserializeFromBytes(byte[] dataBytes) {
+    public static SignedPayload deserializeFromBytes(byte[] dataBytes) {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(dataBytes);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
 

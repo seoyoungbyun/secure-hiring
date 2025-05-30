@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>메인 페이지</title>
+</head>
+<body>
+
+<!-- 지원자 페이지 -->
+<form th:action="@{/applicant}" method="get">
+  <button type="submit">📝 지원자</button>
+</form>
+
+<br><br>
+
+<!-- 채용 담당자 페이지 -->
+<form th:action="@{/hr}" method="get"> <!--요청 url 수정-->
+  <button type="submit">📋 채용 담당자</button>
+</form>
+</body>
+</html>

@@ -13,7 +13,7 @@ public class Resume {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String file;
+    //private String file;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "envelope_id", nullable = false)

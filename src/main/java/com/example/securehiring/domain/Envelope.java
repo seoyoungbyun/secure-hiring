@@ -28,5 +28,5 @@ public class Envelope {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_company_id", nullable = false)
-    private Company receiverCompany;
+    private Company targetCompany;
 }

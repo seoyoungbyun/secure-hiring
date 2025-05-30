@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>이력서 검증</title>
+</head>
+<body>
+    <div class="download-box">
+    <div th:if="${verified}">
+      <p>이력서 검증이 성공적으로 완료되었습니다.</p>
+      <p>검증된 이력서를 아래 버튼을 통해 다운로드할 수 있습니다.</p>
+
+      <a th:href="@{'/hr/resumes/download?envelopeId=' + ${envelopeId} + '&hrName=' + ${hrName}}">
+        <button>이력서 다운로드</button>
+      </a>
+    </div>
+    <div th:unless="${verified}">
+      <p style="color: red;">이력서 검증에 실패했습니다.</p>
+    </div>
+    </div>
+</body>
+</html>
