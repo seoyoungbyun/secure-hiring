@@ -28,6 +28,11 @@ public class ApplicantController {
         return "applicant";
     }
 
+    @GetMapping("/results/check")
+    public String showResultPage() {
+        return "results/checkResult";
+    }
+
     @GetMapping("/resumes/upload")
     public String showUploadPage(Model model){
         List<String> companieNames = resumeService.getCompanyNames();
