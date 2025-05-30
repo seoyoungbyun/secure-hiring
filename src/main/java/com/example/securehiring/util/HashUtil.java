@@ -16,7 +16,7 @@ public class HashUtil {
         return md.digest(data);
     }
 
-    public static boolean compareHashVal(byte[] h1, byte[] h2) {
-        return Arrays.equals(h1, h2);
-    }
+//    public static boolean compareHashVal(byte[] h1, byte[] h2) {
+//        return Arrays.equals(h1, h2);
+//    }
 }

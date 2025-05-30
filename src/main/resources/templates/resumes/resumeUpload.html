@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>이력서 제출</title>
+</head>
+<body>
+  <h2>이력서 제출</h2>
+  <form th:action="@{/applicant/resumes/upload}" method="post" enctype="multipart/form-data">
+    <label>이름</label>
+    <input type="text" name="memberName" required placeholder="이름을 입력하세요" /><br/>
+
+    <label>전송할 회사</label>
+    <select name="companyName" required>
+      <option value="" disabled selected>회사를 선택하세요</option>
+      <option th:each="company : ${companies}"
+              th:value="${company}"
+              th:text="${company}"></option>
+    </select><br/>
+
+    <label>이력서 파일 (PDF)</label>
+    <input type="file" name="resumeFile" accept="application/pdf" required />
+
+    <button type="submit">제출</button>
+  </form>
+</body>
+</html>

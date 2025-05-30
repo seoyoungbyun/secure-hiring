@@ -10,4 +10,3 @@ public interface EnvelopeRepository extends JpaRepository<Envelope, Long> {
     List<Envelope> findByEnvelopeType(EnvelopeType type);
     List<Envelope> findByEnvelopeTypeAndSenderName(EnvelopeType type, String name);
 }
-
