@@ -34,6 +34,7 @@ public class ResultViewerService {
                 .findAllByApplicant(applicant);
 
         return resultList.stream().map(result -> {
+
             try {
                 // 1. 지원자의 개인키 가져오기 전에 null 체크
                 if (applicant.getPrivateKey() == null) {
@@ -58,7 +59,8 @@ public class ResultViewerService {
                     byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), applicantPrivateKey);
                     secretKey = new SecretKeySpec(secretKeyBytes, "AES");
                     Arrays.fill(secretKeyBytes, (byte) 0); // 비밀키 바이트 클리어
-                } catch (RuntimeException | NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
+                } catch (RuntimeException | NoSuchPaddingException | IllegalBlockSizeException |
+                         NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
                     throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.");
                 }
 
@@ -66,6 +68,7 @@ public class ResultViewerService {
                 byte[] payloadBytes = null;
                 try {
                     payloadBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSignedPayload(), secretKey);
+                    Arrays.fill(payloadBytes, (byte) 0);
                 } catch (RuntimeException | NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
                     e.printStackTrace();
                     throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.");
@@ -73,10 +76,13 @@ public class ResultViewerService {
                 SignedPayload payload = SignedPayload.deserializeFromBytes(payloadBytes);
 
                 // 5. 복호화된 채용 결과 해시값 계산 및 서명 검증
-                boolean valid = false;
+                byte[] content = null;
+                boolean valid;
                 try {
-                    byte[] calculatedHash = HashUtil.calcHashVal(payload.getContent());
+                    content = payload.getContent();
+                    byte[] calculatedHash = HashUtil.calcHashVal(content);
                     valid = SignatureUtil.verifyData(payload.getSenderPublicKey(), calculatedHash, payload.getSignature());
+                    Arrays.fill(calculatedHash, (byte) 0);
                 } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
                     e.printStackTrace();
                     throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.");
@@ -87,6 +93,7 @@ public class ResultViewerService {
                 }
 
                 String resultMessage = new String(payload.getContent());
+                Arrays.fill(content, (byte) 0);
                 return new ResultResponse(resultMessage);
 
             } catch (RuntimeException e) {

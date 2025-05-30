@@ -19,6 +19,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.security.*;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 @Service
@@ -59,9 +60,10 @@ public class ResultGeneratorService {
         // 4. 해시 및 전자서명 생성
         byte[] resultBytes = null;
         byte[] signature = null;
+        byte[] hash = null;
         try {
             resultBytes = resultContent.getBytes();
-            byte[] hash = HashUtil.calcHashVal(resultBytes);
+            hash = HashUtil.calcHashVal(resultBytes);
             signature = SignatureUtil.signData(companyPrivateKey, hash);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
             e.printStackTrace();
@@ -71,11 +73,14 @@ public class ResultGeneratorService {
         // 5. SignedPayload 생성 및 직렬화
         SignedPayload payload  = new SignedPayload(resultBytes, signature, companyPublicKey);
         byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
+        Arrays.fill(resultBytes, (byte) 0);
+        Arrays.fill(hash, (byte) 0);
 
         // 6. 비밀키로 payload 암호화(암호문 생성)
         byte[] encryptedSignedPayload = null;
         try {
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
+            Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (RuntimeException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
                  IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
@@ -86,7 +91,9 @@ public class ResultGeneratorService {
         byte[] encryptedSecretKey = null;
         try {
             PublicKey applicantPublicKey = AsymmetricKeyUtil.loadPublicKey(resumeEnvelope.getSender().getPublicKey());
-            encryptedSecretKey = CipherUtil.encrypt(secretKey.getEncoded(), applicantPublicKey);
+            byte[] encodedSecret = secretKey.getEncoded();
+            encryptedSecretKey = CipherUtil.encrypt(encodedSecret, applicantPublicKey);
+            Arrays.fill(encodedSecret, (byte) 0);
         } catch (Exception e) {
             e.printStackTrace();
             throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다");
@@ -95,6 +102,8 @@ public class ResultGeneratorService {
         // 8. Envelope 직렬화 및 저장
         EncryptedEnvelope envelopeDto = new EncryptedEnvelope(encryptedSignedPayload, encryptedSecretKey);
         byte[] envelopeBytes = EncryptedEnvelope.serializeToBytes(envelopeDto);
+        Arrays.fill(encryptedSignedPayload, (byte) 0);
+        Arrays.fill(encryptedSecretKey, (byte) 0);
 
         Envelope resultEnvelope = Envelope.builder()
                 .envelopeData(envelopeBytes)
