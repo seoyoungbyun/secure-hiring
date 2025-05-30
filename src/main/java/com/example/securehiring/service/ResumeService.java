@@ -16,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.*;
@@ -98,7 +101,8 @@ public class ResumeService {
         byte[] encryptedSignedPayload = null;
         try {
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
-        } catch (Exception e) {
+        } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
+                 BadPaddingException | InvalidKeyException e){
             e.printStackTrace();
             throw new CryptoException("암호문 생성 중 오류가 발생했습니다.");
         }
@@ -111,7 +115,8 @@ public class ResumeService {
         try {
             PublicKey companyPublicKey = AsymmetricKeyUtil.loadPublicKey(company.getPublicKey());
             encryptedSecretKey = CipherUtil.encrypt(secretKey.getEncoded(), companyPublicKey);
-        } catch (Exception e) {
+        } catch (NoSuchPaddingException | IllegalBlockSizeException | IOException | NoSuchAlgorithmException |
+                 BadPaddingException | InvalidKeyException | ClassNotFoundException e) {
             e.printStackTrace();
             throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다");
         }
@@ -178,7 +183,8 @@ public class ResumeService {
         try {
             byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), companyPrivateKey);
             secretKey = new SecretKeySpec(secretKeyBytes, "AES"); //byte[] -> Key로 변환
-        } catch (Exception e) {
+        } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
+                 BadPaddingException | InvalidKeyException e) {
             e.printStackTrace();
             throw new KeyProcessingException("지원자의 비밀키 복호화 중 문제가 발생했습니다.");
         }
@@ -187,7 +193,8 @@ public class ResumeService {
         byte[] payloadBytes = null;
         try {
             payloadBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSignedPayload(), secretKey);
-        } catch (Exception e) {
+        } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
+                 BadPaddingException | InvalidKeyException e) {
             e.printStackTrace();
             throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.");
         }
