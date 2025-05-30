@@ -28,8 +28,18 @@ public class HrController {
     }
 
     @GetMapping("/resumes/check")
-    public String showHrLoginPage() {
+    public String showResumesHrLoginPage() {
         return "resumes/checkHr";
+    }
+
+    @GetMapping("/results/check")
+    public String showResultsHrLoginPage() {
+        return "results/checkHr";
+    }
+
+    @GetMapping("/results/evaluate")
+    public String showResultPage() {
+        return "results/evaluateResult";
     }
 
     @GetMapping("/resumes/view")
