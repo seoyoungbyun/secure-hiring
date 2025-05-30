@@ -14,6 +14,9 @@ import com.example.securehiring.repository.ResultNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.security.*;
 import java.util.NoSuchElementException;
@@ -26,21 +29,6 @@ public class ResultGeneratorService {
     private final EnvelopeRepository envelopeRepository;
 
     public void createResult(Long envelopeId, ResultRequest request) {
-        try {
-            Key appliSecretKey = SymmetricKeyUtil.generateSecretKey();
-            SymmetricKeyUtil.saveSecretKey("applicant1_secret.key", appliSecretKey);
-
-            KeyPair companyKeyPair = AsymmetricKeyUtil.generateKeyPair();
-            AsymmetricKeyUtil.savePrivateKey("company1_private.key", companyKeyPair.getPrivate());
-            AsymmetricKeyUtil.savePublicKey("company1_public.key", companyKeyPair.getPublic());
-
-            KeyPair applicantKeyPair = AsymmetricKeyUtil.generateKeyPair();
-            AsymmetricKeyUtil.savePrivateKey("applicant1_private.key", applicantKeyPair.getPrivate());
-            AsymmetricKeyUtil.savePublicKey("applicant1_public.key", applicantKeyPair.getPublic());
-        } catch (NoSuchAlgorithmException | IOException e) {
-            throw new RuntimeException(e);
-        }
-
         // 1. Envelope 조회
         Envelope resumeEnvelope;
         try {
@@ -88,7 +76,8 @@ public class ResultGeneratorService {
         byte[] encryptedSignedPayload = null;
         try {
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
-        } catch (Exception e) {
+        } catch (RuntimeException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                 IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
             throw new CryptoException("암호문 생성 중 오류가 발생했습니다.");
         }

@@ -12,9 +12,13 @@ import com.example.securehiring.domain.dto.EncryptedEnvelope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,8 +35,12 @@ public class ResultViewerService {
 
         return resultList.stream().map(result -> {
             try {
-                //1. 지원자의 개인키 가져오기
-                PrivateKey applicantPrivateKey = null;
+                // 1. 지원자의 개인키 가져오기 전에 null 체크
+                if (applicant.getPrivateKey() == null) {
+                    throw new IllegalArgumentException("개인키가 존재하지 않습니다.");
+                }
+
+                PrivateKey applicantPrivateKey;
                 try {
                     applicantPrivateKey = AsymmetricKeyUtil.loadPrivateKey(applicant.getPrivateKey());
                 } catch (IOException | ClassNotFoundException e) {
@@ -49,7 +57,8 @@ public class ResultViewerService {
                 try {
                     byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), applicantPrivateKey);
                     secretKey = new SecretKeySpec(secretKeyBytes, "AES");
-                } catch (Exception e) {
+                    Arrays.fill(secretKeyBytes, (byte) 0); // 비밀키 바이트 클리어
+                } catch (RuntimeException | NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
                     throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.");
                 }
 
@@ -57,7 +66,7 @@ public class ResultViewerService {
                 byte[] payloadBytes = null;
                 try {
                     payloadBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSignedPayload(), secretKey);
-                } catch (Exception e) {
+                } catch (RuntimeException | NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
                     e.printStackTrace();
                     throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.");
                 }
@@ -80,7 +89,7 @@ public class ResultViewerService {
                 String resultMessage = new String(payload.getContent());
                 return new ResultResponse(resultMessage);
 
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 throw new RuntimeException("결과 복호화 실패: " + e.getMessage());
             }
         }).collect(Collectors.toList());
