@@ -25,10 +25,10 @@ public class Envelope {
     private EnvelopeType envelopeType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", nullable = false)
-    private Member sender;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member applicant;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_company_id", nullable = false)
-    private Company targetCompany;
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 }

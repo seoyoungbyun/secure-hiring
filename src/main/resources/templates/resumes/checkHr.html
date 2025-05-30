@@ -9,6 +9,9 @@
 <form th:action="@{/hr/resumes/view}" method="get">
     <label for="hrName">채용 담당자 이름:</label>
     <input type="text" id="hrName" name="hrName" required>
+
+    <input type="hidden" name="viewType" value="resumes">
+
     <button type="submit">이력서 목록 조회</button>
 </form>
 </body>

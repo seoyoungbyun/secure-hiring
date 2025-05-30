@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Getter
 @Builder
@@ -18,8 +20,6 @@ public class Member {
 
     private String name;
 
-    private String secretKey;
-
     private String publicKey;
 
     private String privateKey;
@@ -30,4 +30,7 @@ public class Member {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company; // HR인 경우만 연결됨 (지원자는 null)
+
+    @OneToMany(mappedBy = "applicant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Envelope> envelopes;
 }

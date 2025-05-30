@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>채용결과 검증</title>
+</head>
+<body>
+<div class="download-box">
+  <div th:if="${verified}">
+    <p>채용결과 검증이 성공적으로 완료되었습니다.</p>
+
+    <div th:if="${result.equals('합격')}">
+      <p th:text="'축하합니다! ' + ${applicantName} + '님, 합격하셨습니다.'"></p>
+      <p>자세한 사항은 문자로 안내드리겠습니다.</p>
+    </div>
+
+    <div th:unless="${result.equals('합격')}">
+      <p th:text="'아쉽지만 ' + ${applicantName} + '님, 불합격하셨습니다.'"></p>
+      <p>다음 기회에 다시 도전해 주세요.</p>
+    </div>
+  </div>
+
+  <div th:unless="${verified}">
+    <p style="color: red;">채용결과 검증에 실패했습니다.</p>
+  </div>
+</div>
+</body>
+</html>
