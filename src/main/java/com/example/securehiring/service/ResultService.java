@@ -52,10 +52,10 @@ public class ResultService {
         }
 
         if (hr.getCompany().getPublicKey() == null) {
-            throw new IllegalStateException("공개키가 존재하지 않습니다.");
+            throw new KeyProcessingException("공개키가 존재하지 않습니다.");
         }
         if (hr.getCompany().getPrivateKey() == null) {
-            throw new IllegalStateException("비밀키가 존재하지 않습니다.");
+            throw new KeyProcessingException("비밀키가 존재하지 않습니다.");
         }
 
         PublicKey publicKey = null;
@@ -76,6 +76,7 @@ public class ResultService {
         try {
             byte[] hash = HashUtil.calcHashVal(resultBytes);
             signature = SignatureUtil.signData(privateKey, hash);
+            Arrays.fill(hash, (byte) 0);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
             e.printStackTrace();
             throw new CryptoException("채용결과 해시값 또는 전자서명 생성 중 오류가 발생했습니다.");
@@ -88,6 +89,10 @@ public class ResultService {
         try {
             byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
+
+            Arrays.fill(resultBytes, (byte) 0);
+            Arrays.fill(signature, (byte) 0);
+            Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
             e.printStackTrace();
@@ -98,7 +103,7 @@ public class ResultService {
         byte[] encryptedSecretKey = null;
         try {
             if (envelope.getApplicant().getPublicKey() == null) {
-                throw new IllegalStateException("공개키가 존재하지 않습니다.");
+                throw new KeyProcessingException("공개키가 존재하지 않습니다.");
             }
             PublicKey applicantPublicKey = AsymmetricKeyUtil.loadPublicKey(envelope.getApplicant().getPublicKey());
             encryptedSecretKey = CipherUtil.encrypt(secretKey.getEncoded(), applicantPublicKey);
@@ -121,8 +126,6 @@ public class ResultService {
 
         envelopeRepository.save(resultEnvelope);
 
-        Arrays.fill(resultBytes, (byte) 0);
-        Arrays.fill(signature, (byte) 0);
         Arrays.fill(encryptedSignedPayload, (byte) 0);
         Arrays.fill(encryptedSecretKey, (byte) 0);
         Arrays.fill(envelopeBytes, (byte) 0);
@@ -167,7 +170,7 @@ public class ResultService {
 
         //4. 비밀키 복호화
         if (decryptedEnvelope.getEncryptedSecretKey() == null) {
-            throw new IllegalStateException("비밀키가 존재하지 않습니다.");
+            throw new KeyProcessingException("비밀키가 존재하지 않습니다.");
         }
 
         Key secretKey = null;
