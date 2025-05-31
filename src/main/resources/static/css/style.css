@@ -99,3 +99,32 @@ button {
 button:hover {
     background-color: #ccc;
 }
+
+.site-header {
+    background-color: #ffffff;
+    padding: 1.5rem 2rem;
+    width: 100%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+
+    /* 왼쪽 정렬로 변경 */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.site-title {
+    margin: 0;
+}
+
+.site-title a {
+    text-decoration: none;
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 'Arial', sans-serif;
+}
+

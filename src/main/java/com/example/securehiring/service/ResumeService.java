@@ -111,6 +111,7 @@ public class ResumeService {
         try {
             byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
+            Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
             e.printStackTrace();
@@ -148,7 +149,6 @@ public class ResumeService {
 
         Arrays.fill(resumeBytes, (byte) 0);
         Arrays.fill(signature, (byte) 0);
-        Arrays.fill(signedPayloadBytes, (byte) 0);
         Arrays.fill(encryptedSignedPayload, (byte) 0);
         Arrays.fill(encryptedSecretKey, (byte) 0);
         Arrays.fill(envelopeBytes, (byte) 0);
