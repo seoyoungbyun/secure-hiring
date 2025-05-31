@@ -58,7 +58,7 @@ public class ApplicantController {
                                @RequestParam String applicantName,
                                Model model) {
         try {
-            byte[] result = resultService.verifyResult(applicantName, envelopeId);
+            byte[] result = resultService.verifyResult(envelopeId, applicantName);
 
             model.addAttribute("verified", result != null);
             model.addAttribute("result", new String(Objects.requireNonNull(result), StandardCharsets.UTF_8));

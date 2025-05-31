@@ -77,7 +77,7 @@ public class HrController {
     @PostMapping("/results/generate")
     public String createResult(@ModelAttribute ResultRequest request, Model model) {
         try {
-            resultService.createResult(request.getHrName(), request.getEnvelopeId(), request.isResult());
+            resultService.createResult(request.getEnvelopeId(), request.getHrName(), request.isResult());
             return "results/evaluateSuccess";
         } catch (MemberNotFoundException | IllegalStateException | EnvelopeNotFoundException |
                  KeyProcessingException | CryptoException e) {
