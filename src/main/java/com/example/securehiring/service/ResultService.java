@@ -21,6 +21,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.*;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -53,6 +54,13 @@ public class ResultService {
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             throw new KeyProcessingException("비밀키 생성 중 오류가 발생했습니다.");
+        }
+
+        if (hr.getCompany().getPublicKey() == null) {
+            throw new IllegalStateException("공개키가 존재하지 않습니다.");
+        }
+        if (hr.getCompany().getPrivateKey() == null) {
+            throw new IllegalStateException("비밀키가 존재하지 않습니다.");
         }
 
         PublicKey publicKey = null;
@@ -88,6 +96,9 @@ public class ResultService {
         // 7. 지원자 공개키로 비밀키 암호화
         byte[] encryptedSecretKey = null;
         try {
+            if (envelope.getApplicant().getPublicKey() == null) {
+                throw new IllegalStateException("공개키가 존재하지 않습니다.");
+            }
             PublicKey applicantPublicKey = AsymmetricKeyUtil.loadPublicKey(envelope.getApplicant().getPublicKey());
             encryptedSecretKey = CipherUtil.encrypt(secretKey.getEncoded(), applicantPublicKey);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | IOException | NoSuchAlgorithmException |
@@ -108,6 +119,12 @@ public class ResultService {
                 .build();
 
         envelopeRepository.save(resultEnvelope);
+
+        Arrays.fill(resultBytes, (byte) 0);
+        Arrays.fill(signature, (byte) 0);
+        Arrays.fill(encryptedSignedPayload, (byte) 0);
+        Arrays.fill(encryptedSecretKey, (byte) 0);
+        Arrays.fill(envelopeBytes, (byte) 0);
     }
 
     public List<Envelope> getReceivedResults(String applicantName){
@@ -130,6 +147,10 @@ public class ResultService {
                 .orElseThrow(() -> new MemberNotFoundException("해당되는 지원자를 찾을 수 없습니다."));
 
         //2. 지원자의 개인키 가져오기
+        if (applicant.getPrivateKey() == null) {
+            throw new IllegalStateException("개인키가 존재하지 않습니다.");
+        }
+
         PrivateKey applicantPrivateKey = null;
         try {
             applicantPrivateKey = AsymmetricKeyUtil.loadPrivateKey(applicant.getPrivateKey());
@@ -141,12 +162,18 @@ public class ResultService {
         //3. 전자봉투 역직렬화
         byte[] envelopeBytes = envelope.getEnvelopeData();
         EncryptedEnvelope decryptedEnvelope = EncryptedEnvelope.deserializeFromBytes(envelopeBytes);
+        Arrays.fill(envelopeBytes, (byte) 0);
 
         //4. 비밀키 복호화
+        if (decryptedEnvelope.getEncryptedSecretKey() == null) {
+            throw new IllegalStateException("비밀키가 존재하지 않습니다.");
+        }
+
         Key secretKey = null;
         try {
             byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), applicantPrivateKey);
             secretKey = new SecretKeySpec(secretKeyBytes, SymmetricKeyUtil.getAlgorithm()); //byte[] -> Key로 변환
+            Arrays.fill(secretKeyBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             e.printStackTrace();
@@ -163,12 +190,14 @@ public class ResultService {
             throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.");
         }
         SignedPayload payload = SignedPayload.deserializeFromBytes(payloadBytes);
+        Arrays.fill(payloadBytes, (byte) 0);
 
         //6. 복호화된 이력서의 해시값 계산 및 서명 검증
         boolean valid = false;
         try {
             byte[] calculatedHash = HashUtil.calcHashVal(payload.getContent());
             valid = SignatureUtil.verifyData(payload.getSenderPublicKey(), calculatedHash, payload.getSignature());
+            Arrays.fill(calculatedHash, (byte) 0);
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
             e.printStackTrace();
             throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.");
