@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:replace="fragments/header :: header">
+<head>
     <meta charset="UTF-8">
     <title>채용 담당자</title>
     <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
+<div th:replace="fragments/header :: headerFragment"></div>
+
 <!-- 이력서 확인하기 (채용 담당자 이름 입력) -->
 <form th:action="@{/hr/resumes/check}" method="get">
     <button type="submit">📥 이력서 확인하기</button>

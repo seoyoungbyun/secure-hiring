@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/header :: header">
+<head>
     <meta charset="UTF-8">
     <title>지원자</title>
     <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
+<div th:replace="fragments/header :: headerFragment"></div>
 
 <!-- 이력서 지원하기 -->
 <form th:action="@{/applicant/resumes/upload}" method="get">
