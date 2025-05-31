@@ -35,7 +35,7 @@ public class ResumeService {
     private final EnvelopeRepository envelopeRepository;
 
     public void uploadResume(String memberName, String companyName, MultipartFile resumeFile){
-        //1. 회원 확인 및 키 생성
+        //1. 회원 확인 및 키 생성/로드
         PublicKey publicKey = null;
         PrivateKey privateKey = null;
 
@@ -104,13 +104,12 @@ public class ResumeService {
             throw new CryptoException("이력서 해시값 또는 전자서명 생성 중 오류가 발생했습니다.");
         }
 
-        //3. SignedPayload 생성 및 직렬화
+        //3. SignedPayload 직렬화 및 암호화(암호문 생성)
         SignedPayload payload = new SignedPayload(resumeBytes, signature, publicKey);
-        byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
 
-        //4. 비밀키로 payload 암호화(암호문 생성)
         byte[] encryptedSignedPayload = null;
         try {
+            byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
@@ -118,7 +117,7 @@ public class ResumeService {
             throw new CryptoException("암호문 생성 중 오류가 발생했습니다.");
         }
 
-        //5. 기업 공개키로 비밀키 암호화 (전자봉투 생성)
+        //4. 기업 공개키로 비밀키 암호화 (전자봉투 생성)
         Company company = companyRepository.findByName(companyName)
                 .orElseThrow(() -> new CompanyNotFoundException("해당되는 기업을 찾을 수 없습니다."));
         if (company.getPublicKey() == null) {
@@ -135,7 +134,7 @@ public class ResumeService {
             throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다");
         }
 
-        //6. Envelope 직렬화 및 저장
+        //5. Envelope 직렬화 및 저장
         EncryptedEnvelope envelopeDto = new EncryptedEnvelope(encryptedSignedPayload, encryptedSecretKey);
         byte[] envelopeBytes = EncryptedEnvelope.serializeToBytes(envelopeDto);
 
@@ -207,7 +206,7 @@ public class ResumeService {
         EncryptedEnvelope decryptedEnvelope = EncryptedEnvelope.deserializeFromBytes(envelopeBytes);
         Arrays.fill(envelopeBytes, (byte) 0);
 
-        //4. 지원자의 비밀키 복호화
+        //4. 비밀키 복호화
         if (decryptedEnvelope.getEncryptedSecretKey() == null) {
             throw new IllegalStateException("비밀키가 존재하지 않습니다.");
         }
@@ -220,7 +219,7 @@ public class ResumeService {
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             e.printStackTrace();
-            throw new KeyProcessingException("지원자의 비밀키 복호화 중 문제가 발생했습니다.");
+            throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.");
         }
 
         //5. payload 복호화 및 SignedPayload 역직렬화
@@ -247,7 +246,7 @@ public class ResumeService {
         }
 
         if (!valid) {
-            throw new SecurityException("전자서명 검증을 실패했습니다. 데이터 위조 가능성이 있습니다.");
+            return new byte[0];
         }
 
         return payload.getContent();

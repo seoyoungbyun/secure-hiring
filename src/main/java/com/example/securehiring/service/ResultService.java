@@ -1,6 +1,5 @@
 package com.example.securehiring.service;
 
-import com.example.securehiring.domain.Company;
 import com.example.securehiring.domain.Envelope;
 import com.example.securehiring.domain.Member;
 import com.example.securehiring.domain.dto.EncryptedEnvelope;
@@ -8,7 +7,6 @@ import com.example.securehiring.domain.dto.SignedPayload;
 import com.example.securehiring.domain.enums.EnvelopeType;
 import com.example.securehiring.domain.enums.Role;
 import com.example.securehiring.exception.*;
-import com.example.securehiring.repository.CompanyRepository;
 import com.example.securehiring.repository.EnvelopeRepository;
 import com.example.securehiring.repository.MemberRepository;
 import com.example.securehiring.util.*;
@@ -31,7 +29,7 @@ public class ResultService {
     private final MemberRepository memberRepository;
     private final EnvelopeRepository envelopeRepository;
 
-    public void createResult(String hrName, Long envelopeId, boolean isPassed) {
+    public void createResult(Long envelopeId, String hrName, boolean result) {
         // 1. 채용담당자 확인
         Member hr = memberRepository.findByName(hrName)
                 .orElseThrow(() -> new MemberNotFoundException("해당되는 채용담당자를 찾을 수 없습니다."));
@@ -44,10 +42,7 @@ public class ResultService {
         Envelope envelope = envelopeRepository.findById(envelopeId)
                 .orElseThrow(() -> new EnvelopeNotFoundException("해당되는 전자봉투를 찾을 수 없습니다."));
 
-        // 3. 채용 결과 문자열 생성
-        String resultContent = isPassed ? "합격" : "불합격";
-
-        // 4. 키 로드
+        // 3. 키 로드
         Key secretKey = null;
         try {
             secretKey = SymmetricKeyUtil.generateSecretKey();
@@ -69,31 +64,37 @@ public class ResultService {
         try {
             publicKey = AsymmetricKeyUtil.loadPublicKey(hr.getCompany().getPublicKey());
             privateKey = AsymmetricKeyUtil.loadPrivateKey(hr.getCompany().getPrivateKey());
-        } catch (Exception e) {
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
             throw new KeyProcessingException("키 로드 중 오류 발생: " + e.getMessage());
         }
 
-        // 5. 해시 + 전자서명 생성
+        // 4. 해시 및 전자서명 생성
+        String resultContent = result ? "합격" : "불합격";
         byte[] resultBytes = resultContent.getBytes();
-        byte[] signature;
+        byte[] signature = null;
         try {
             byte[] hash = HashUtil.calcHashVal(resultBytes);
             signature = SignatureUtil.signData(privateKey, hash);
-        } catch (Exception e) {
-            throw new CryptoException("전자서명 생성 오류: " + e.getMessage());
+        } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
+            e.printStackTrace();
+            throw new CryptoException("채용결과 해시값 또는 전자서명 생성 중 오류가 발생했습니다.");
         }
 
-        // 6. SignedPayload 직렬화 및 암호화
+        // 5. SignedPayload 직렬화 및 암호화(암호문 생성)
         SignedPayload payload = new SignedPayload(resultBytes, signature, publicKey);
-        byte[] encryptedSignedPayload;
+
+        byte[] encryptedSignedPayload = null;
         try {
-            byte[] payloadBytes = SignedPayload.serializeToBytes(payload);
-            encryptedSignedPayload = CipherUtil.encrypt(payloadBytes, secretKey);
-        } catch (Exception e) {
-            throw new CryptoException("payload 암호화 오류: " + e.getMessage());
+            byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
+            encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
+        } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
+                 BadPaddingException | InvalidKeyException e){
+            e.printStackTrace();
+            throw new CryptoException("암호문 생성 중 오류가 발생했습니다.");
         }
 
-        // 7. 지원자 공개키로 비밀키 암호화
+        // 6. 지원자 공개키로 비밀키 암호화 (전자봉투 생성)
         byte[] encryptedSecretKey = null;
         try {
             if (envelope.getApplicant().getPublicKey() == null) {
@@ -107,7 +108,7 @@ public class ResultService {
             throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다");
         }
 
-        // 8. Envelope 저장
+        // 7. Envelope 직렬화 및 저장
         EncryptedEnvelope envelopeDto = new EncryptedEnvelope(encryptedSignedPayload, encryptedSecretKey);
         byte[] envelopeBytes = EncryptedEnvelope.serializeToBytes(envelopeDto);
 
@@ -138,7 +139,7 @@ public class ResultService {
                 .toList();
     }
 
-    public byte[] verifyResult(String applicantName, Long envelopeId) {
+    public byte[] verifyResult(Long envelopeId, String applicantName) {
         //1. 채용 담당자 및 지원자 확인
         Envelope envelope = envelopeRepository.findById(envelopeId)
                 .orElseThrow(() -> new EnvelopeNotFoundException("해당되는 전자봉투를 찾을 수 없습니다."));
@@ -177,7 +178,7 @@ public class ResultService {
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             e.printStackTrace();
-            throw new KeyProcessingException("지원자의 비밀키 복호화 중 문제가 발생했습니다.");
+            throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.");
         }
 
         //5. payload 복호화 및 SignedPayload 역직렬화
@@ -204,7 +205,7 @@ public class ResultService {
         }
 
         if (!valid) {
-            throw new SecurityException("전자서명 검증을 실패했습니다. 데이터 위조 가능성이 있습니다.");
+            return new byte[0];
         }
 
         return payload.getContent();
