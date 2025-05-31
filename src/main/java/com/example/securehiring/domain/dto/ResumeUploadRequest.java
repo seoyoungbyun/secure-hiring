@@ -5,9 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ResultRequest {
-    private Long envelopeId;
-    private String hrName;
+public class ResumeUploadRequest {
     private String applicantName;
-    private boolean result;
+    private String companyName;
 }

@@ -13,33 +13,18 @@ import java.security.NoSuchAlgorithmException;
 @Component
 public class SymmetricKeyUtil {
 
-    private static final Path keyDir = Paths.get("uploads/keys");
+    private static final Path keyDir = Paths.get("uploads/keys/");
 
-    private static final String ALGORITHM = "AES";
-    private static final int KEY_SIZE = 128;
+    private static String algorithm = "AES";
+    private static int keySize = 128;
+
+    public static final String getAlgorithm() {
+        return algorithm;
+    }
 
     public static Key generateSecretKey() throws NoSuchAlgorithmException {
-        KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM);
-        keyGen.init(KEY_SIZE);
+        KeyGenerator keyGen = KeyGenerator.getInstance(algorithm);
+        keyGen.init(keySize);
         return keyGen.generateKey();
-    }
-
-    public static void saveSecretKey(String fname, Key secretKey) throws IOException {
-        if (!Files.exists(keyDir)) {
-            Files.createDirectories(keyDir); // 디렉토리가 없으면 생성
-        }
-
-        try(FileOutputStream fstream = new FileOutputStream(keyDir.toString() + fname);
-            ObjectOutputStream ostream = new ObjectOutputStream(fstream)){
-            ostream.writeObject(secretKey);
-        }
-    }
-
-    public static Key loadSecretKey(String fname) throws ClassNotFoundException, IOException {
-        try (FileInputStream fis = new FileInputStream(keyDir.toString() + fname);
-             ObjectInputStream ois = new ObjectInputStream(fis)) {
-            Object obj = ois.readObject();
-            return (Key) obj;
-        }
     }
 }

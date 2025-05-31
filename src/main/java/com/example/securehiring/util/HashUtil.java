@@ -4,15 +4,14 @@ import org.springframework.stereotype.Component;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 @Component
 public class HashUtil {
 
-    private static final String ALGORITHM = "SHA-256";
+    private static String algorithm = "SHA-256";
 
     public static byte[] calcHashVal(byte[] data) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance(ALGORITHM);
+        MessageDigest md = MessageDigest.getInstance(algorithm);
         return md.digest(data);
     }
 

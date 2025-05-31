@@ -9,112 +9,26 @@
 <body>
 <div class="container">
     <h1>이력서 평가</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>지원자</th>
-                <th>결과 전송</th>
-            </tr>
-        </thead>
-        <tbody id="envelopTableBody">
-        </tbody>
-    </table>
 
-    <!-- 결과 작성 모달 -->
-    <div id="resultModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeResultModal()">X</span>
-            <h2>결과 작성</h2>
-            <div id="resultForm">
-                <label><input type="radio" name="result" value="true"> 합격</label><br>
-                <label><input type="radio" name="result" value="false"> 불합격</label><br><br>
-                <button onclick="writeResult()">결과 전송</button>
-            </div>
-        </div>
+    <div class="resume-card">
+        <p><strong th:text="${request.applicantName + '_이력서'}"></strong></p>
+
+        <form th:action="@{/hr/results/generate}" th:object="${request}" method="post">
+            <input type="hidden" th:field="*{envelopeId}" />
+            <input type="hidden" th:field="*{hrName}" />
+            <input type="hidden" th:field="*{applicantName}" />
+
+            <label>
+                <input type="radio" th:field="*{result}" th:value="true" required> 합격
+            </label>
+            <label>
+                <input type="radio" th:field="*{result}" th:value="false"> 불합격
+            </label>
+
+            <br><br>
+            <button type="submit">결과 전송</button>
+        </form>
     </div>
 </div>
-
-<script>
-    let currentEnvelopeId = null;
-
-    // 페이지 로드 시 이력서 목록 가져오기
-    window.onload = function() {
-        fetchResumes();
-    };
-
-    // 이력서 목록 가져오기
-    async function fetchResumes() {
-        try {
-            const response = await fetch('/api/resumes');
-            const envelops = await response.json();
-            console.log('envelops:', envelops);
-            renderEnvelopTable(envelops);
-        } catch (error) {
-            console.error('이력서 목록을 가져오는데 실패했습니다:', error);
-            alert('이력서 목록을 가져오는데 실패했습니다.');
-        }
-    }
-
-    // 테이블에 데이터 출력
-    function renderEnvelopTable(envelops) {
-        const tableBody = document.getElementById('envelopTableBody');
-        tableBody.innerHTML = envelops.map(envelop => `
-        <tr>
-            <td>${envelop.applicantName}</td>
-            <td id="result-cell-${envelop.envelopeId}">
-              <button onclick="showResultModal(${envelop.envelopeId})">결과 전송</button>
-            </td>
-        </tr>
-    `).join('');
-    }
-
-    function showResultModal(envelopeId) {
-        currentEnvelopeId = envelopeId;
-        document.getElementById('resultModal').style.display = 'block';
-    }
-
-    function closeResultModal() {
-        document.getElementById('resultModal').style.display = 'none';
-        document.querySelectorAll('input[name="result"]').forEach(el => el.checked = false);
-        currentEnvelopeId = null;
-    }
-
-    // 결과 전송
-    async function writeResult() {
-        console.log('currentEnvelopId:', currentEnvelopeId);    // 디버깅
-        const selected = document.querySelector('input[name="result"]:checked');
-        if (!selected) {
-            alert('합격 또는 불합격을 선택해주세요.');
-            return;
-        }
-
-        const resultValue = selected.value === 'true';
-
-        try {
-            const response = await fetch(`/api/results/generate/${currentEnvelopeId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ result: resultValue })
-            });
-
-            if (!response.ok) {
-                throw new Error('결과 전송 실패');
-            } else {
-                const cell = document.getElementById(`result-cell-${currentEnvelopeId}`);
-                if (cell) {
-                    cell.innerHTML = `<span>전송 완료</span>`;
-                }
-            }
-
-            alert('결과가 성공적으로 전송되었습니다.');
-            closeResultModal();
-        } catch (error) {
-            console.error('결과 전송 중 오류:', error);
-            alert(error.message);
-        }
-    }
-</script>
 </body>
 </html>
