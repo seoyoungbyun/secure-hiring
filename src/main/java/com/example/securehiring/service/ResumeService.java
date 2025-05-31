@@ -35,31 +35,26 @@ public class ResumeService {
 
     public void uploadResume(String memberName, String companyName, MultipartFile resumeFile){
         //1. 회원 확인 및 키 생성
-        Key secretKey = null;
         PublicKey publicKey = null;
         PrivateKey privateKey = null;
 
         Member applicant = memberRepository.findByName(memberName).orElse(null);
         if (applicant == null) {
             try {
-                secretKey = SymmetricKeyUtil.generateSecretKey();
                 KeyPair keyPair = AsymmetricKeyUtil.generateKeyPair();
                 publicKey = keyPair.getPublic();
                 privateKey = keyPair.getPrivate();
 
                 String publicKeyPath = memberName + "_public_" + System.currentTimeMillis() + ".key";
                 String privateKeyPath = memberName + "_private_" + System.currentTimeMillis() + ".key";
-                String secretKeyPath = memberName + "_secret_" + System.currentTimeMillis() + ".key";
 
                 AsymmetricKeyUtil.savePublicKey(publicKeyPath, publicKey);
                 AsymmetricKeyUtil.savePrivateKey(privateKeyPath, privateKey);
-                SymmetricKeyUtil.saveSecretKey(secretKeyPath, secretKey);
 
                 applicant = Member.builder()
                         .name(memberName)
                         .publicKey(publicKeyPath)
                         .privateKey(privateKeyPath)
-                        .secretKey(secretKeyPath)
                         .role(Role.APPLICANT)
                         .build();
                 memberRepository.save(applicant);
@@ -72,13 +67,20 @@ public class ResumeService {
             }
         }else{  //기존의 지원자일 경우
             try{
-                secretKey = SymmetricKeyUtil.loadSecretKey(applicant.getSecretKey());
                 publicKey = AsymmetricKeyUtil.loadPublicKey(applicant.getPublicKey());
                 privateKey = AsymmetricKeyUtil.loadPrivateKey(applicant.getPrivateKey());
             }catch (ClassNotFoundException | IOException e){
                 e.printStackTrace();
                 throw new KeyProcessingException("지원자의 키를 불러오는 중 오류가 발생했습니다.");
             }
+        }
+
+        Key secretKey = null;
+        try {
+            secretKey = SymmetricKeyUtil.generateSecretKey();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new KeyProcessingException("비밀키 생성 중 오류가 발생했습니다.");
         }
 
         //2. 해시 및 전자서명 생성
@@ -97,7 +99,7 @@ public class ResumeService {
         SignedPayload payload = new SignedPayload(resumeBytes, signature, publicKey);
         byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
 
-        //4. 지원자의 비밀키로 payload 암호화(암호문 생성)
+        //4. 비밀키로 payload 암호화(암호문 생성)
         byte[] encryptedSignedPayload = null;
         try {
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
@@ -128,8 +130,8 @@ public class ResumeService {
         Envelope envelope = Envelope.builder()
                 .envelopeData(envelopeBytes)
                 .envelopeType(EnvelopeType.RESUME)
-                .sender(applicant)
-                .targetCompany(company)
+                .applicant(applicant)
+                .company(company)
                 .build();
         envelopeRepository.save(envelope);
     }
@@ -149,7 +151,9 @@ public class ResumeService {
         }
 
         //getResumes가 null이면 빈 리스트 반환
-        return hr.getCompany().getResumes();
+        return hr.getCompany().getEnvelopes().stream()
+                .filter(envelope -> envelope.getEnvelopeType() == EnvelopeType.RESUME)
+                .toList();
     }
 
     public byte[] verifyResume(Long envelopeId, String hrName) {
@@ -182,7 +186,7 @@ public class ResumeService {
         Key secretKey = null;
         try {
             byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), companyPrivateKey);
-            secretKey = new SecretKeySpec(secretKeyBytes, "AES"); //byte[] -> Key로 변환
+            secretKey = new SecretKeySpec(secretKeyBytes, SymmetricKeyUtil.getAlgorithm()); //byte[] -> Key로 변환
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             e.printStackTrace();

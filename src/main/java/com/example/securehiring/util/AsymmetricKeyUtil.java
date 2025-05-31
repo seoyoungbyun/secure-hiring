@@ -11,14 +11,14 @@ import java.security.*;
 @Component
 public class AsymmetricKeyUtil {
 
-    private static final Path keyDir = Paths.get("uploads/keys");
+    private static final Path keyDir = Paths.get("uploads/keys/");
 
-    private static final String ALGORITHM = "RSA";
-    private static final int KEY_SIZE = 1024;
+    private static String algorithm = "RSA";
+    private static int keySize = 1024;
 
     public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(ALGORITHM);
-        keyPairGen.initialize(KEY_SIZE);
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(algorithm);
+        keyPairGen.initialize(keySize);
 
         return keyPairGen.generateKeyPair();
     }
@@ -28,7 +28,7 @@ public class AsymmetricKeyUtil {
             Files.createDirectories(keyDir); // 디렉토리가 없으면 생성
         }
 
-        try (FileOutputStream fstream = new FileOutputStream(keyDir.toString() + fname);
+        try (FileOutputStream fstream = new FileOutputStream(keyDir.toString() + "/" + fname);
              ObjectOutputStream ostream = new ObjectOutputStream(fstream)) {
             ostream.writeObject(publicKey);
         }
@@ -39,14 +39,14 @@ public class AsymmetricKeyUtil {
             Files.createDirectories(keyDir); // 디렉토리가 없으면 생성
         }
 
-        try(FileOutputStream fstream = new FileOutputStream(keyDir.toString() + fname);
+        try(FileOutputStream fstream = new FileOutputStream(keyDir.toString() + "/" + fname);
             ObjectOutputStream ostream = new ObjectOutputStream(fstream)) {
                 ostream.writeObject(privateKey);
         }
     }
 
     public static PublicKey loadPublicKey(String fname) throws IOException, ClassNotFoundException {
-        try (FileInputStream fis = new FileInputStream(keyDir.toString() + fname);
+        try (FileInputStream fis = new FileInputStream(keyDir.toString() + "/" + fname);
              ObjectInputStream ois = new ObjectInputStream(fis)) {
             Object obj = ois.readObject();
             return (PublicKey)obj;
@@ -54,7 +54,7 @@ public class AsymmetricKeyUtil {
     }
 
     public static PrivateKey loadPrivateKey(String fname) throws IOException, ClassNotFoundException{
-        try (FileInputStream fis = new FileInputStream(keyDir.toString() + fname);
+        try (FileInputStream fis = new FileInputStream(keyDir.toString() + "/" + fname);
             ObjectInputStream ois = new ObjectInputStream(fis)) {
             Object obj = ois.readObject();
             return (PrivateKey)obj;

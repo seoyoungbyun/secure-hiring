@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>채용결과 검증</title>
+</head>
+<body>
+<h2>지원자 확인</h2>
+<form th:action="@{/applicant/results/view}" method="get">
+    <label for="applicantName">지원자 이름:</label>
+    <input type="text" id="applicantName" name="applicantName" required>
+
+    <button type="submit">채용결과 목록 조회</button>
+</form>
+</body>
+</html>

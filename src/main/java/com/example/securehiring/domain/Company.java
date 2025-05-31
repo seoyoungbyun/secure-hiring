@@ -23,6 +23,6 @@ public class Company {
 
     private String privateKey;
 
-    @OneToMany(mappedBy = "targetCompany", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Envelope> resumes;
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Envelope> envelopes;
 }

@@ -1,16 +1,15 @@
 package com.example.securehiring.controller;
 
 import com.example.securehiring.domain.Envelope;
+import com.example.securehiring.domain.dto.ResultRequest;
 import com.example.securehiring.exception.*;
+import com.example.securehiring.service.ResultService;
 import com.example.securehiring.service.ResumeService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.OutputStream;
 import java.util.List;
@@ -21,31 +20,26 @@ import java.util.List;
 public class HrController {
 
     private final ResumeService resumeService;
-
-    @GetMapping
-    public String showHrPage(){
-        return "hr";
-    }
-
-    @GetMapping("/resumes/check")
-    public String showHrLoginPage() {
-        return "resumes/checkHr";
-    }
+    private final ResultService resultService;
 
     @GetMapping("/resumes/view")
-    public String viewReceivedResumes(@RequestParam String hrName, Model model) {
+    public String viewReceivedResumes(@RequestParam String hrName,
+                                      @RequestParam(defaultValue = "resumes") String viewType,
+                                      Model model) {
         try {
             List<Envelope> envelopes = resumeService.getReceivedResumes(hrName);
+
             model.addAttribute("envelopes", envelopes);
             model.addAttribute("hrName", hrName);
-            return "resumes/resumeList";
-        }catch (MemberNotFoundException | IllegalStateException e){
+
+            return viewType + "/resumeList";
+        } catch (MemberNotFoundException | IllegalStateException e) {
             model.addAttribute("message", e.getMessage());
             return "error";
         }
     }
 
-    @PostMapping("/resumes/verify")
+    @GetMapping("/resumes/verify")
     public String verifyResume(@RequestParam Long envelopeId,
                                @RequestParam String hrName,
                                Model model) {
@@ -68,15 +62,27 @@ public class HrController {
     public void downloadResume(@RequestParam Long envelopeId,
                                @RequestParam String hrName,
                                HttpServletResponse response) throws Exception {
-        byte[] pdfBytes = resumeService.verifyResume(envelopeId, hrName);
+        byte[] resumeBytes = resumeService.verifyResume(envelopeId, hrName);
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=verified_resume.pdf");
-        response.setContentLength(pdfBytes.length);
+        response.setContentLength(resumeBytes.length);
 
         try (OutputStream os = response.getOutputStream()) {
-            os.write(pdfBytes);
+            os.write(resumeBytes);
             os.flush();
+        }
+    }
+
+    @PostMapping("/results/generate")
+    public String createResult(@ModelAttribute ResultRequest request, Model model) {
+        try {
+            resultService.createResult(request.getHrName(), request.getEnvelopeId(), request.isResult());
+            return "results/evaluateSuccess";
+        } catch (MemberNotFoundException | IllegalStateException | EnvelopeNotFoundException |
+                 KeyProcessingException | CryptoException e) {
+            model.addAttribute("message", e.getMessage());
+            return "error";
         }
     }
 }
