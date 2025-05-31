@@ -176,7 +176,7 @@ public class ResultService {
         }
 
         if (!valid) {
-            throw new SecurityException("전자서명 검증을 실패했습니다. 데이터 위조 가능성이 있습니다.");
+            return new byte[0];
         }
 
         return payload.getContent();
