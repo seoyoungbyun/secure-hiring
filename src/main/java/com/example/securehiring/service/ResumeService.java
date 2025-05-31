@@ -69,10 +69,10 @@ public class ResumeService {
         }else{  //기존의 지원자일 경우
             try{
                 if (applicant.getPublicKey() == null) {
-                    throw new IllegalStateException("공개키가 존재하지 않습니다.");
+                    throw new KeyProcessingException("공개키가 존재하지 않습니다.");
                 }
                 if (applicant.getPrivateKey() == null) {
-                    throw new IllegalStateException("개인키가 존재하지 않습니다.");
+                    throw new KeyProcessingException("개인키가 존재하지 않습니다.");
                 }
 
                 publicKey = AsymmetricKeyUtil.loadPublicKey(applicant.getPublicKey());
@@ -111,6 +111,10 @@ public class ResumeService {
         try {
             byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
+
+            Arrays.fill(resumeBytes, (byte) 0);
+            Arrays.fill(signature, (byte) 0);
+            Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
             e.printStackTrace();
@@ -121,7 +125,7 @@ public class ResumeService {
         Company company = companyRepository.findByName(companyName)
                 .orElseThrow(() -> new CompanyNotFoundException("해당되는 기업을 찾을 수 없습니다."));
         if (company.getPublicKey() == null) {
-            throw new IllegalStateException("공개키가 존재하지 않습니다.");
+            throw new KeyProcessingException("공개키가 존재하지 않습니다.");
         }
 
         byte[] encryptedSecretKey = null;
@@ -146,9 +150,6 @@ public class ResumeService {
                 .build();
         envelopeRepository.save(envelope);
 
-        Arrays.fill(resumeBytes, (byte) 0);
-        Arrays.fill(signature, (byte) 0);
-        Arrays.fill(signedPayloadBytes, (byte) 0);
         Arrays.fill(encryptedSignedPayload, (byte) 0);
         Arrays.fill(encryptedSecretKey, (byte) 0);
         Arrays.fill(envelopeBytes, (byte) 0);
@@ -190,7 +191,7 @@ public class ResumeService {
         Company company = hr.getCompany();
 
         if (company.getPrivateKey() == null) {
-            throw new IllegalStateException("개인키가 존재하지 않습니다.");
+            throw new KeyProcessingException("개인키가 존재하지 않습니다.");
         }
 
         PrivateKey companyPrivateKey = null;
@@ -208,7 +209,7 @@ public class ResumeService {
 
         //4. 비밀키 복호화
         if (decryptedEnvelope.getEncryptedSecretKey() == null) {
-            throw new IllegalStateException("비밀키가 존재하지 않습니다.");
+            throw new KeyProcessingException("비밀키가 존재하지 않습니다.");
         }
 
         Key secretKey = null;
