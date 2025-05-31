@@ -23,6 +23,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -67,6 +68,13 @@ public class ResumeService {
             }
         }else{  //기존의 지원자일 경우
             try{
+                if (applicant.getPublicKey() == null) {
+                    throw new IllegalStateException("공개키가 존재하지 않습니다.");
+                }
+                if (applicant.getPrivateKey() == null) {
+                    throw new IllegalStateException("개인키가 존재하지 않습니다.");
+                }
+
                 publicKey = AsymmetricKeyUtil.loadPublicKey(applicant.getPublicKey());
                 privateKey = AsymmetricKeyUtil.loadPrivateKey(applicant.getPrivateKey());
             }catch (ClassNotFoundException | IOException e){
@@ -90,6 +98,7 @@ public class ResumeService {
             resumeBytes = resumeFile.getBytes();
             byte[] hash = HashUtil.calcHashVal(resumeBytes);
             signature = SignatureUtil.signData(privateKey, hash);
+            Arrays.fill(hash, (byte) 0);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException | IOException e) {
             e.printStackTrace();
             throw new CryptoException("이력서 해시값 또는 전자서명 생성 중 오류가 발생했습니다.");
@@ -111,6 +120,9 @@ public class ResumeService {
         //4. 기업 공개키로 비밀키 암호화 (전자봉투 생성)
         Company company = companyRepository.findByName(companyName)
                 .orElseThrow(() -> new CompanyNotFoundException("해당되는 기업을 찾을 수 없습니다."));
+        if (company.getPublicKey() == null) {
+            throw new IllegalStateException("공개키가 존재하지 않습니다.");
+        }
 
         byte[] encryptedSecretKey = null;
         try {
@@ -133,6 +145,13 @@ public class ResumeService {
                 .company(company)
                 .build();
         envelopeRepository.save(envelope);
+
+        Arrays.fill(resumeBytes, (byte) 0);
+        Arrays.fill(signature, (byte) 0);
+        Arrays.fill(signedPayloadBytes, (byte) 0);
+        Arrays.fill(encryptedSignedPayload, (byte) 0);
+        Arrays.fill(encryptedSecretKey, (byte) 0);
+        Arrays.fill(envelopeBytes, (byte) 0);
     }
 
     public List<String> getCompanyNames(){
@@ -169,6 +188,11 @@ public class ResumeService {
 
         //2. 기업의 개인키 가져오기
         Company company = hr.getCompany();
+
+        if (company.getPrivateKey() == null) {
+            throw new IllegalStateException("개인키가 존재하지 않습니다.");
+        }
+
         PrivateKey companyPrivateKey = null;
         try {
             companyPrivateKey = AsymmetricKeyUtil.loadPrivateKey(company.getPrivateKey());
@@ -180,12 +204,18 @@ public class ResumeService {
         //3. 전자봉투 역직렬화
         byte[] envelopeBytes = envelope.getEnvelopeData();
         EncryptedEnvelope decryptedEnvelope = EncryptedEnvelope.deserializeFromBytes(envelopeBytes);
+        Arrays.fill(envelopeBytes, (byte) 0);
 
         //4. 비밀키 복호화
+        if (decryptedEnvelope.getEncryptedSecretKey() == null) {
+            throw new IllegalStateException("비밀키가 존재하지 않습니다.");
+        }
+
         Key secretKey = null;
         try {
             byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), companyPrivateKey);
             secretKey = new SecretKeySpec(secretKeyBytes, SymmetricKeyUtil.getAlgorithm()); //byte[] -> Key로 변환
+            Arrays.fill(secretKeyBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             e.printStackTrace();
@@ -202,12 +232,14 @@ public class ResumeService {
             throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.");
         }
         SignedPayload payload = SignedPayload.deserializeFromBytes(payloadBytes);
+        Arrays.fill(payloadBytes, (byte) 0);
 
         //6. 복호화된 이력서의 해시값 계산 및 서명 검증
         boolean valid = false;
         try {
             byte[] calculatedHash = HashUtil.calcHashVal(payload.getContent());
             valid = SignatureUtil.verifyData(payload.getSenderPublicKey(), calculatedHash, payload.getSignature());
+            Arrays.fill(calculatedHash, (byte) 0);
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
             e.printStackTrace();
             throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.");

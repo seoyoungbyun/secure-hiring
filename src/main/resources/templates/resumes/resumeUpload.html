@@ -3,12 +3,14 @@
 <head th:replace="fragments/header :: header">
     <meta charset="UTF-8">
     <title>이력서 제출</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <h2>이력서 제출</h2>
-  <form th:action="@{/applicant/resumes/upload}" method="post" enctype="multipart/form-data">
+  <form th:action="@{/applicant/resumes/upload}"
+        method="post" enctype="multipart/form-data" class="form-resume">
     <label>이름</label>
-    <input type="text" name="applicantName" required placeholder="이름을 입력하세요" /><br/>
+    <input type="text" name="applicantName" required placeholder="이름을 입력하세요" />
 
     <label>전송할 회사</label>
     <select name="companyName" required>
@@ -16,11 +18,10 @@
       <option th:each="company : ${companyNames}"
               th:value="${company}"
               th:text="${company}"></option>
-    </select><br/>
+    </select>
 
     <label>이력서 파일(PDF): </label>
     <input type="file" name="resumeFile" accept="application/pdf" required />
-
     <button type="submit">제출</button>
   </form>
 </body>

@@ -3,11 +3,12 @@
 <head th:replace="fragments/header :: header">
     <meta charset="UTF-8">
     <title>이력서 제출</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <h2>이력서 제출이 성공적으로 완료되었습니다!</h2>
   <form th:action="@{/applicant/resumes/upload}" method="get">
-      <button type="submit">다른 이력서 제출하기</button>
+      <button type="submit">📤 다른 이력서 제출하기</button>
   </form>
 </body>
 </html>

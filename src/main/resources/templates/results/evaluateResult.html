@@ -4,31 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>이력서 평가</title>
-    <link rel="stylesheet" href="/css/result.css">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<div class="container">
-    <h1>이력서 평가</h1>
+<h1>이력서 평가</h1>
+<div class="evaluateResult-container">
 
-    <div class="resume-card">
-        <p><strong th:text="${request.applicantName + '_이력서'}"></strong></p>
+    <p><strong th:text="${request.applicantName + '_이력서'}"></strong></p>
 
-        <form th:action="@{/hr/results/generate}" th:object="${request}" method="post">
-            <input type="hidden" th:field="*{envelopeId}" />
-            <input type="hidden" th:field="*{hrName}" />
-            <input type="hidden" th:field="*{applicantName}" />
+    <form th:action="@{/hr/results/generate}" th:object="${request}" method="post">
+        <input type="hidden" th:field="*{envelopeId}" />
+        <input type="hidden" th:field="*{hrName}" />
+        <input type="hidden" th:field="*{applicantName}" />
 
+        <div class="evaluateResult-label">
             <label>
                 <input type="radio" th:field="*{result}" th:value="true" required> 합격
             </label>
             <label>
                 <input type="radio" th:field="*{result}" th:value="false"> 불합격
             </label>
+        </div>
 
-            <br><br>
-            <button type="submit">결과 전송</button>
-        </form>
-    </div>
+        <button type="submit">결과 전송</button>
+    </form>
 </div>
 </body>
 </html>

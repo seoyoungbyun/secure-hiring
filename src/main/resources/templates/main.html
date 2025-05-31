@@ -3,6 +3,7 @@
 <head th:replace="fragments/header :: header">
     <meta charset="UTF-8">
     <title>메인 페이지</title>
+    <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
 
@@ -10,8 +11,6 @@
 <form th:action="@{/applicant}" method="get">
   <button type="submit">📝 지원자</button>
 </form>
-
-<br><br>
 
 <!-- 채용 담당자 페이지 -->
 <form th:action="@{/hr}" method="get"> <!--요청 url 수정-->
