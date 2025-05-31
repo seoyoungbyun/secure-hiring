@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>지원자</title>
+    <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
 
@@ -10,8 +11,6 @@
 <form th:action="@{/applicant/resumes/upload}" method="get">
     <button type="submit">📤 이력서 지원하기</button>
 </form>
-
-<br><br>
 
 <!-- 합격발표 확인하기 -->
 <form th:action="@{/applicant/results/check}" method="get"> <!--요청 url 수정-->

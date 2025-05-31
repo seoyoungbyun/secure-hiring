@@ -3,19 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>이력서 검증</title>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 <h2>받은 이력서 목록</h2>
 
-<div th:each="envelope : ${envelopes}" class="resume-card">
-  <p th:text="${envelope.company.getName() + ' 채용 결과'}"></p>
+<div class="resume-card-list">
+  <div th:each="envelope : ${envelopes}" class="resume-card">
+    <p th:text="${envelope.company.getName() + ' 채용 결과'}"></p>
 
-  <form th:action="@{/applicant/results/verify}" method="get">
-    <input type="hidden" name="envelopeId" th:value="${envelope.id}" />
-    <input type="hidden" name="hrName" th:value="${hrName}" />
-    <input type="hidden" name="applicantName" th:value="${applicantName}" />
-    <button type="submit">확인하기</button>
-  </form>
+    <form th:action="@{/applicant/results/verify}" method="get" class="resume-card-form">
+      <input type="hidden" name="envelopeId" th:value="${envelope.id}" />
+      <input type="hidden" name="hrName" th:value="${hrName}" />
+      <input type="hidden" name="applicantName" th:value="${applicantName}" />
+      <button type="submit">확인하기</button>
+    </form>
+  </div>
 </div>
 </body>
 </html>
