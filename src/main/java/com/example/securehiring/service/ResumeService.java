@@ -60,11 +60,9 @@ public class ResumeService {
                         .build();
                 memberRepository.save(applicant);
             } catch (NoSuchAlgorithmException e){
-                e.printStackTrace();
-                throw new KeyProcessingException("지원자의 키 생성 중 오류가 발생했습니다.");
+                throw new KeyProcessingException("지원자의 키 생성 중 오류가 발생했습니다.", e);
             } catch (IOException e) {
-                e.printStackTrace();
-                throw new KeyProcessingException("지원자의 키 저장 중 오류가 발생했습니다.");
+                throw new KeyProcessingException("지원자의 키 저장 중 오류가 발생했습니다.", e);
             }
         }else{  //기존의 지원자일 경우
             try{
@@ -78,8 +76,7 @@ public class ResumeService {
                 publicKey = AsymmetricKeyUtil.loadPublicKey(applicant.getPublicKey());
                 privateKey = AsymmetricKeyUtil.loadPrivateKey(applicant.getPrivateKey());
             }catch (ClassNotFoundException | IOException e){
-                e.printStackTrace();
-                throw new KeyProcessingException("지원자의 키를 불러오는 중 오류가 발생했습니다.");
+                throw new KeyProcessingException("지원자의 키를 불러오는 중 오류가 발생했습니다.", e);
             }
         }
 
@@ -87,8 +84,7 @@ public class ResumeService {
         try {
             secretKey = SymmetricKeyUtil.generateSecretKey();
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            throw new KeyProcessingException("비밀키 생성 중 오류가 발생했습니다.");
+            throw new KeyProcessingException("비밀키 생성 중 오류가 발생했습니다.", e);
         }
 
         //2. 해시 및 전자서명 생성
@@ -100,8 +96,7 @@ public class ResumeService {
             signature = SignatureUtil.signData(privateKey, hash);
             Arrays.fill(hash, (byte) 0);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException | IOException e) {
-            e.printStackTrace();
-            throw new CryptoException("이력서 해시값 또는 전자서명 생성 중 오류가 발생했습니다.");
+            throw new CryptoException("이력서 해시값 또는 전자서명 생성 중 오류가 발생했습니다.", e);
         }
 
         //3. SignedPayload 직렬화 및 암호화(암호문 생성)
@@ -117,8 +112,7 @@ public class ResumeService {
             Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
-            e.printStackTrace();
-            throw new CryptoException("암호문 생성 중 오류가 발생했습니다.");
+            throw new CryptoException("암호문 생성 중 오류가 발생했습니다.", e);
         }
 
         //4. 기업 공개키로 비밀키 암호화 (전자봉투 생성)
@@ -134,8 +128,7 @@ public class ResumeService {
             encryptedSecretKey = CipherUtil.encrypt(secretKey.getEncoded(), companyPublicKey);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | IOException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException | ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다");
+            throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다", e);
         }
 
         //5. Envelope 직렬화 및 저장
@@ -198,8 +191,7 @@ public class ResumeService {
         try {
             companyPrivateKey = AsymmetricKeyUtil.loadPrivateKey(company.getPrivateKey());
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new KeyProcessingException("기업의 개인키를 불러오는 중 문제가 발생했습니다.");
+            throw new KeyProcessingException("기업의 개인키를 불러오는 중 문제가 발생했습니다.", e);
         }
 
         //3. 전자봉투 역직렬화
@@ -219,8 +211,7 @@ public class ResumeService {
             Arrays.fill(secretKeyBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
-            e.printStackTrace();
-            throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.");
+            throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.", e);
         }
 
         //5. payload 복호화 및 SignedPayload 역직렬화
@@ -229,8 +220,7 @@ public class ResumeService {
             payloadBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSignedPayload(), secretKey);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
-            e.printStackTrace();
-            throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.");
+            throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.", e);
         }
         SignedPayload payload = SignedPayload.deserializeFromBytes(payloadBytes);
         Arrays.fill(payloadBytes, (byte) 0);
@@ -242,8 +232,7 @@ public class ResumeService {
             valid = SignatureUtil.verifyData(payload.getSenderPublicKey(), calculatedHash, payload.getSignature());
             Arrays.fill(calculatedHash, (byte) 0);
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
-            e.printStackTrace();
-            throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.");
+            throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.", e);
         }
 
         if (!valid) {

@@ -31,7 +31,22 @@ public class ApplicantController {
         try {
             resumeService.uploadResume(request.getApplicantName(), request.getCompanyName(), resumeFile);
             return "resumes/submitSuccess";
-        } catch (KeyProcessingException | CryptoException | CompanyNotFoundException e) {
+        } catch (CompanyNotFoundException e) {
+            System.out.println("기업을 찾을 수 없습니다: " + e.getMessage());
+            e.printStackTrace();
+
+            model.addAttribute("message", e.getMessage());
+            return "error";
+        } catch (KeyProcessingException e) {
+            System.out.println("키 처리 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+
+            model.addAttribute("message", e.getMessage());
+            return "error";
+        } catch (CryptoException e) {
+            System.out.println("암호화/복호화 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+
             model.addAttribute("message", e.getMessage());
             return "error";
         }

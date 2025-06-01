@@ -47,15 +47,14 @@ public class ResultService {
         try {
             secretKey = SymmetricKeyUtil.generateSecretKey();
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            throw new KeyProcessingException("비밀키 생성 중 오류가 발생했습니다.");
+            throw new KeyProcessingException("키 생성 중 오류가 발생했습니다.");
         }
 
         if (hr.getCompany().getPublicKey() == null) {
             throw new KeyProcessingException("공개키가 존재하지 않습니다.");
         }
         if (hr.getCompany().getPrivateKey() == null) {
-            throw new KeyProcessingException("비밀키가 존재하지 않습니다.");
+            throw new KeyProcessingException("개인키가 존재하지 않습니다.");
         }
 
         PublicKey publicKey = null;
@@ -65,8 +64,7 @@ public class ResultService {
             publicKey = AsymmetricKeyUtil.loadPublicKey(hr.getCompany().getPublicKey());
             privateKey = AsymmetricKeyUtil.loadPrivateKey(hr.getCompany().getPrivateKey());
         } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-            throw new KeyProcessingException("키 로드 중 오류 발생: " + e.getMessage());
+            throw new KeyProcessingException("키 로드 중 오류가 발생했습니다.", e);
         }
 
         // 4. 해시 및 전자서명 생성
@@ -78,8 +76,7 @@ public class ResultService {
             signature = SignatureUtil.signData(privateKey, hash);
             Arrays.fill(hash, (byte) 0);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
-            e.printStackTrace();
-            throw new CryptoException("채용결과 해시값 또는 전자서명 생성 중 오류가 발생했습니다.");
+            throw new CryptoException("채용결과 해시값 또는 전자서명 생성 중 오류가 발생했습니다.", e);
         }
 
         // 5. SignedPayload 직렬화 및 암호화(암호문 생성)
@@ -95,8 +92,7 @@ public class ResultService {
             Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
-            e.printStackTrace();
-            throw new CryptoException("암호문 생성 중 오류가 발생했습니다.");
+            throw new CryptoException("암호문 생성 중 오류가 발생했습니다.", e);
         }
 
         // 6. 지원자 공개키로 비밀키 암호화 (전자봉투 생성)
@@ -109,8 +105,7 @@ public class ResultService {
             encryptedSecretKey = CipherUtil.encrypt(secretKey.getEncoded(), applicantPublicKey);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | IOException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException | ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다");
+            throw new CryptoException("전자봉투 생성 중 오류가 발생했습니다", e);
         }
 
         // 7. Envelope 직렬화 및 저장
@@ -159,8 +154,7 @@ public class ResultService {
         try {
             applicantPrivateKey = AsymmetricKeyUtil.loadPrivateKey(applicant.getPrivateKey());
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new KeyProcessingException("지원자의 개인키를 불러오는 중 문제가 발생했습니다.");
+            throw new KeyProcessingException("지원자의 개인키를 불러오는 중 문제가 발생했습니다.", e);
         }
 
         //3. 전자봉투 역직렬화
@@ -180,8 +174,7 @@ public class ResultService {
             Arrays.fill(secretKeyBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
-            e.printStackTrace();
-            throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.");
+            throw new KeyProcessingException("비밀키 복호화 중 오류가 발생했습니다.", e);
         }
 
         //5. payload 복호화 및 SignedPayload 역직렬화
@@ -190,8 +183,7 @@ public class ResultService {
             payloadBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSignedPayload(), secretKey);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
-            e.printStackTrace();
-            throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.");
+            throw new CryptoException("암호문 복호화 중 오류가 발생했습니다.", e);
         }
         SignedPayload payload = SignedPayload.deserializeFromBytes(payloadBytes);
         Arrays.fill(payloadBytes, (byte) 0);
@@ -203,8 +195,7 @@ public class ResultService {
             valid = SignatureUtil.verifyData(payload.getSenderPublicKey(), calculatedHash, payload.getSignature());
             Arrays.fill(calculatedHash, (byte) 0);
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
-            e.printStackTrace();
-            throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.");
+            throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.", e);
         }
 
         if (!valid) {
