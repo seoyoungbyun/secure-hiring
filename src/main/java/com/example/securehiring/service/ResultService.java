@@ -70,37 +70,47 @@ public class ResultService {
         // 4. 해시 및 전자서명 생성
         String resultContent = result ? "합격" : "불합격";
         byte[] resultBytes = resultContent.getBytes();
+        byte[] hash = null;
         byte[] signature = null;
         try {
-            byte[] hash = HashUtil.calcHashVal(resultBytes);
+            hash = HashUtil.calcHashVal(resultBytes);
             signature = SignatureUtil.signData(privateKey, hash);
-            Arrays.fill(hash, (byte) 0);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
+            Arrays.fill(resultBytes, (byte) 0);
             throw new CryptoException("채용결과 해시값 또는 전자서명 생성 중 오류가 발생했습니다.", e);
+        } finally {
+            if (hash != null) {
+                Arrays.fill(hash, (byte) 0);
+            }
         }
 
         // 5. SignedPayload 직렬화 및 암호화(암호문 생성)
         SignedPayload payload = new SignedPayload(resultBytes, signature, publicKey);
 
+        byte[] signedPayloadBytes = null;
         byte[] encryptedSignedPayload = null;
         try {
-            byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
+            signedPayloadBytes = SignedPayload.serializeToBytes(payload);
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
-
-            Arrays.fill(resultBytes, (byte) 0);
-            Arrays.fill(signature, (byte) 0);
-            Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
             throw new CryptoException("암호문 생성 중 오류가 발생했습니다.", e);
+        } finally {
+            Arrays.fill(resultBytes, (byte) 0);
+            Arrays.fill(signature, (byte) 0);
+
+            if (signedPayloadBytes != null) {
+                Arrays.fill(signedPayloadBytes, (byte) 0);
+            }
         }
 
         // 6. 지원자 공개키로 비밀키 암호화 (전자봉투 생성)
+        if (envelope.getApplicant().getPublicKey() == null) {
+            throw new KeyProcessingException("공개키가 존재하지 않습니다.");
+        }
+
         byte[] encryptedSecretKey = null;
         try {
-            if (envelope.getApplicant().getPublicKey() == null) {
-                throw new KeyProcessingException("공개키가 존재하지 않습니다.");
-            }
             PublicKey applicantPublicKey = AsymmetricKeyUtil.loadPublicKey(envelope.getApplicant().getPublicKey());
             encryptedSecretKey = CipherUtil.encrypt(secretKey.getEncoded(), applicantPublicKey);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | IOException | NoSuchAlgorithmException |
@@ -168,13 +178,17 @@ public class ResultService {
         }
 
         Key secretKey = null;
+        byte[] secretKeyBytes = null;
         try {
-            byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), applicantPrivateKey);
+            secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), applicantPrivateKey);
             secretKey = new SecretKeySpec(secretKeyBytes, SymmetricKeyUtil.getAlgorithm()); //byte[] -> Key로 변환
-            Arrays.fill(secretKeyBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             throw new KeyProcessingException("비밀키 복호화 중 오류가 발생했습니다.", e);
+        } finally {
+            if (secretKeyBytes != null) {
+                Arrays.fill(secretKeyBytes, (byte) 0);
+            }
         }
 
         //5. payload 복호화 및 SignedPayload 역직렬화
@@ -190,18 +204,26 @@ public class ResultService {
 
         //6. 복호화된 이력서의 해시값 계산 및 서명 검증
         boolean valid = false;
+        byte[] calculatedHash = null;
         try {
-            byte[] calculatedHash = HashUtil.calcHashVal(payload.getContent());
+            calculatedHash = HashUtil.calcHashVal(payload.getContent());
             valid = SignatureUtil.verifyData(payload.getSenderPublicKey(), calculatedHash, payload.getSignature());
-            Arrays.fill(calculatedHash, (byte) 0);
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
             throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.", e);
+        } finally {
+            if (calculatedHash != null) {
+                Arrays.fill(calculatedHash, (byte) 0);
+            }
         }
 
         if (!valid) {
             return new byte[0];
         }
 
-        return payload.getContent();
+        byte[] content = payload.getContent();
+        byte[] result = Arrays.copyOf(content, content.length);
+        Arrays.fill(content, (byte) 0);
+
+        return result;
     }
 }

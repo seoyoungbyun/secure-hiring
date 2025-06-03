@@ -89,30 +89,41 @@ public class ResumeService {
 
         //2. 해시 및 전자서명 생성
         byte[] resumeBytes = null;
+        byte[] hash = null;
         byte[] signature = null;
         try {
             resumeBytes = resumeFile.getBytes();
-            byte[] hash = HashUtil.calcHashVal(resumeBytes);
+            hash = HashUtil.calcHashVal(resumeBytes);
             signature = SignatureUtil.signData(privateKey, hash);
-            Arrays.fill(hash, (byte) 0);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException | IOException e) {
+            if (resumeBytes != null) {
+                Arrays.fill(resumeBytes, (byte) 0);
+            }
             throw new CryptoException("이력서 해시값 또는 전자서명 생성 중 오류가 발생했습니다.", e);
+        } finally {
+            if (hash != null) {
+                Arrays.fill(hash, (byte) 0);
+            }
         }
 
         //3. SignedPayload 직렬화 및 암호화(암호문 생성)
         SignedPayload payload = new SignedPayload(resumeBytes, signature, publicKey);
 
+        byte[] signedPayloadBytes = null;
         byte[] encryptedSignedPayload = null;
         try {
-            byte[] signedPayloadBytes = SignedPayload.serializeToBytes(payload);
+            signedPayloadBytes = SignedPayload.serializeToBytes(payload);
             encryptedSignedPayload = CipherUtil.encrypt(signedPayloadBytes, secretKey);
-
-            Arrays.fill(resumeBytes, (byte) 0);
-            Arrays.fill(signature, (byte) 0);
-            Arrays.fill(signedPayloadBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e){
             throw new CryptoException("암호문 생성 중 오류가 발생했습니다.", e);
+        } finally{
+            Arrays.fill(resumeBytes, (byte) 0);
+            Arrays.fill(signature, (byte) 0);
+
+            if (signedPayloadBytes != null) {
+                Arrays.fill(signedPayloadBytes, (byte) 0);
+            }
         }
 
         //4. 기업 공개키로 비밀키 암호화 (전자봉투 생성)
@@ -205,13 +216,17 @@ public class ResumeService {
         }
 
         Key secretKey = null;
+        byte[] secretKeyBytes = null;
         try {
-            byte[] secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), companyPrivateKey);
+            secretKeyBytes = CipherUtil.decrypt(decryptedEnvelope.getEncryptedSecretKey(), companyPrivateKey);
             secretKey = new SecretKeySpec(secretKeyBytes, SymmetricKeyUtil.getAlgorithm()); //byte[] -> Key로 변환
-            Arrays.fill(secretKeyBytes, (byte) 0);
         } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             throw new KeyProcessingException("비밀키 복호화 중 문제가 발생했습니다.", e);
+        } finally {
+            if (secretKeyBytes != null) {
+                Arrays.fill(secretKeyBytes, (byte) 0);
+            }
         }
 
         //5. payload 복호화 및 SignedPayload 역직렬화
@@ -227,18 +242,26 @@ public class ResumeService {
 
         //6. 복호화된 이력서의 해시값 계산 및 서명 검증
         boolean valid = false;
+        byte[] calculatedHash = null;
         try {
-            byte[] calculatedHash = HashUtil.calcHashVal(payload.getContent());
+            calculatedHash = HashUtil.calcHashVal(payload.getContent());
             valid = SignatureUtil.verifyData(payload.getSenderPublicKey(), calculatedHash, payload.getSignature());
-            Arrays.fill(calculatedHash, (byte) 0);
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
             throw new CryptoException("해시값 또는 전자서명 검증 중 오류가 발생했습니다.", e);
+        } finally {
+            if (calculatedHash != null) {
+                Arrays.fill(calculatedHash, (byte) 0);
+            }
         }
 
         if (!valid) {
             return new byte[0];
         }
 
-        return payload.getContent();
+        byte[] content = payload.getContent();
+        byte[] result = Arrays.copyOf(content, content.length);
+        Arrays.fill(content, (byte) 0);
+
+        return result;
     }
 }

@@ -63,6 +63,9 @@ public class ApplicantController {
 
             return "results/resultList";
         } catch (MemberNotFoundException e) {
+            System.out.println("지원자를 찾을 수 없습니다: " + e.getMessage());
+            e.printStackTrace();
+
             model.addAttribute("message", e.getMessage());
             return "error";
         }
@@ -77,12 +80,32 @@ public class ApplicantController {
 
             boolean verified = result.length > 0;
             model.addAttribute("verified", verified);
-            model.addAttribute("result", new String(Objects.requireNonNull(result), StandardCharsets.UTF_8));
+            model.addAttribute("result", new String(result, StandardCharsets.UTF_8));
             model.addAttribute("applicantName", applicantName);
 
             return "results/resultVerify";
-        } catch (EnvelopeNotFoundException | MemberNotFoundException | KeyProcessingException |
-                 CryptoException | SecurityException e) {
+        } catch (EnvelopeNotFoundException e) {
+            System.out.println("전자봉투를 찾을 수 없습니다: " + e.getMessage());
+            e.printStackTrace();
+
+            model.addAttribute("message", e.getMessage());
+            return "error";
+        } catch (MemberNotFoundException e) {
+            System.out.println("지원자를 찾을 수 없습니다: " + e.getMessage());
+            e.printStackTrace();
+
+            model.addAttribute("message", e.getMessage());
+            return "error";
+        } catch (KeyProcessingException e) {
+            System.out.println("키 처리 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+
+            model.addAttribute("message", e.getMessage());
+            return "error";
+        } catch (CryptoException e) {
+            System.out.println("암호화/복호화 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+
             model.addAttribute("message", e.getMessage());
             return "error";
         }
