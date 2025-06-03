@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>에러 발생</title>
+  <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
 <div th:replace="fragments/header :: headerFragment"></div>
@@ -10,6 +11,5 @@
 <h2>⚠ 오류가 발생했습니다</h2>
 <p th:if="${message != null}" th:text="${message}"></p>
 <p>요청을 처리하는 중 문제가 발생했습니다. 다시 시도해주세요.</p>
-<a th:href="@{/}">메인으로 돌아가기</a>
 </body>
 </html>
